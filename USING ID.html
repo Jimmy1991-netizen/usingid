@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Student Data Form</title>
+  <style>
+    button {
+      padding: 8px 15px;
+      font-size: 16px;
+      margin-top: 10px;
+    }
+    #addNewBtn, #updateBtn {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <h2>Student Information</h2>
+  
+  <input type="text" id="searchID" placeholder="Enter ID Number to search">
+  <button type="button" id="searchBtn">Search</button>
+  <br><br>
+
+  <form id="studentForm">
+    ID Number: <input type="text" id="id" required><br><br>
+    Name: <input type="text" id="name" required><br><br>
+    Grade: <input type="text" id="grade" required><br><br>
+    Section: <input type="text" id="section" required><br><br>
+
+    <button type="submit" id="submitBtn">Submit</button>
+    <button type="button" id="updateBtn">Update</button>
+    <button type="button" id="addNewBtn">Add New</button>
+  </form>
+
+  <p id="result"></p>
+
+  <script>
+    const scriptURL = "https://script.google.com/macros/s/AKfycbwIku6ekzuRZaI2HkYWZpxdtBv7fEyM-5MP-hoXCdPSjfU3ghGQZ837Z5TfiV5O4y3J/exec";
+    const form = document.getElementById("studentForm");
+    const submitBtn = document.getElementById("submitBtn");
+    const addNewBtn = document.getElementById("addNewBtn");
+    const updateBtn = document.getElementById("updateBtn");
+    const searchBtn = document.getElementById("searchBtn");
+    const result = document.getElementById("result");
+
+    // --- ADD NEW DATA ---
+    form.addEventListener("submit", function(e) {
+      e.preventDefault();
+
+      const data = {
+        action: "add",
+        id: document.getElementById("id").value,
+        name: document.getElementById("name").value,
+        grade: document.getElementById("grade").value,
+        section: document.getElementById("section").value
+      };
+
+      fetch(scriptURL, {
+        method: 'POST',
+        body: JSON.stringify(data)
+      })
+      .then(res => res.text())
+      .then(msg => {
+        result.innerText = "✅ " + msg;
+        form.reset();
+        submitBtn.style.display = "none";
+        addNewBtn.style.display = "inline-block";
+      })
+      .catch(err => {
+        result.innerText = "❌ Error: " + err.message;
+      });
+    });
+
+    // --- SEARCH STUDENT BY ID ---
+    searchBtn.addEventListener("click", function() {
+      const id = document.getElementById("searchID").value.trim();
+      if (id === "") {
+        result.innerText = "⚠️ Please enter an ID number to search.";
+        return;
+      }
+
+      fetch(scriptURL, {
+        method: 'POST',
+        body: JSON.stringify({ action: "search", id })
+      })
+      .then(res => res.text())
+      .then(text => {
+        if (text === "Not Found") {
+          result.innerText = "❌ Student ID not found.";
+        } else {
+          const student = JSON.parse(text);
+          document.getElementById("id").value = student.id;
+          document.getElementById("name").value = student.name;
+          document.getElementById("grade").value = student.grade;
+          document.getElementById("section").value = student.section;
+          result.innerText = "✅ Student found. You can update the data below.";
+          submitBtn.style.display = "none";
+          updateBtn.style.display = "inline-block";
+        }
+      })
+      .catch(err => {
+        result.innerText = "❌ Error: " + err.message;
+      });
+    });
+
+    // --- UPDATE STUDENT BY ID ---
+    updateBtn.addEventListener("click", function() {
+      const data = {
+        action: "update",
+        id: document.getElementById("id").value,
+        name: document.getElementById("name").value,
+        grade: document.getElementById("grade").value,
+        section: document.getElementById("section").value
+      };
+
+      fetch(scriptURL, {
+        method: 'POST',
+        body: JSON.stringify(data)
+      })
+      .then(res => res.text())
+      .then(msg => {
+        result.innerText = "✅ " + msg;
+        updateBtn.style.display = "none";
+        addNewBtn.style.display = "inline-block";
+      })
+      .catch(err => {
+        result.innerText = "❌ Error: " + err.message;
+      });
+    });
+
+    // --- ADD NEW BUTTON ---
+    addNewBtn.addEventListener("click", function() {
+      result.innerText = "";
+      form.reset();
+      document.getElementById("searchID").value = "";
+      addNewBtn.style.display = "none";
+      updateBtn.style.display = "none";
+      submitBtn.style.display = "inline-block";
+    });
+  </script>
+</body>
+</html>
