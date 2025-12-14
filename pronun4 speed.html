@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>English Pronunciation Practice</title>
+
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        background: #f2f2f2;
+        text-align: center;
+        padding: 30px;
+    }
+
+    .card {
+        background: white;
+        max-width: 450px;
+        margin: auto;
+        padding: 25px;
+        border-radius: 12px;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+    }
+
+    h1 {
+        color: #333;
+    }
+
+    textarea, select {
+        width: 92%;
+        padding: 10px;
+        font-size: 16px;
+        margin: 10px 0;
+        resize: none;
+        overflow: hidden;
+        min-height: 50px;
+        line-height: 1.4;
+    }
+
+    input[type=range] {
+        width: 92%;
+        margin: 10px 0;
+    }
+
+    button {
+        padding: 10px 18px;
+        margin: 5px;
+        font-size: 16px;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+    }
+
+    .speak {
+        background: #007bff;
+        color: white;
+    }
+
+    .record {
+        background: #28a745;
+        color: white;
+    }
+
+    .result {
+        margin-top: 15px;
+        font-size: 18px;
+        font-weight: bold;
+    }
+</style>
+</head>
+
+<body>
+
+<div class="card">
+    <h1>🗣️ English Pronunciation</h1>
+
+    <p>Type a word or sentence:</p>
+    <textarea id="textInput" oninput="autoResize(this)">Education is important</textarea>
+
+    <p>Select voice:</p>
+    <select id="voiceGender">
+        <option value="female">Female Voice</option>
+        <option value="male">Male Voice</option>
+    </select>
+
+    <p>Speech speed: <span id="speedValue">1.0</span></p>
+    <input type="range" id="speedSlider" min="0.5" max="2.0" step="0.1" value="1.0" oninput="updateSpeed(this.value)">
+
+    <br>
+
+    <button class="speak" onclick="playPronunciation()">🔊 Listen</button>
+    <button class="record" onclick="startRecording()">🎤 Speak</button>
+
+    <div class="result" id="result"></div>
+</div>
+
+<script>
+    let voices = [];
+    let speechRate = 1.0; // default normal speed
+
+    // Load voices
+    speechSynthesis.onvoiceschanged = () => {
+        voices = speechSynthesis.getVoices();
+    };
+
+    // Auto-resize textarea
+    function autoResize(textarea) {
+        textarea.style.height = "auto";
+        textarea.style.height = textarea.scrollHeight + "px";
+    }
+
+    window.onload = () => {
+        autoResize(document.getElementById("textInput"));
+    };
+
+    function updateSpeed(value) {
+        speechRate = parseFloat(value);
+        document.getElementById("speedValue").textContent = value;
+    }
+
+    function playPronunciation() {
+        const text = document.getElementById("textInput").value;
+        const gender = document.getElementById("voiceGender").value;
+
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = "en-US";
+        utterance.rate = speechRate;
+
+        // Select voice based on gender
+        const selectedVoice = voices.find(voice => {
+            const name = voice.name.toLowerCase();
+            const lang = voice.lang.toLowerCase();
+            const genderMatch = gender === "female"
+                ? name.includes("female") || name.includes("zira") || name.includes("samantha")
+                : name.includes("male") || name.includes("david") || name.includes("mark");
+            return lang.includes("en") && genderMatch;
+        });
+
+        if (selectedVoice) {
+            utterance.voice = selectedVoice;
+        }
+
+        speechSynthesis.cancel();
+        speechSynthesis.speak(utterance);
+    }
+
+    function startRecording() {
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+        if (!SpeechRecognition) {
+            alert("Speech Recognition not supported in this browser.");
+            return;
+        }
+
+        const recognition = new SpeechRecognition();
+        recognition.lang = "en-US";
+        recognition.start();
+
+        recognition.onresult = function(event) {
+            const spokenText = event.results[0][0].transcript.toLowerCase();
+            const targetText = document.getElementById("textInput").value.toLowerCase();
+            checkPronunciation(spokenText, targetText);
+        };
+    }
+
+    function checkPronunciation(spoken, target) {
+        const result = document.getElementById("result");
+
+        if (spoken === target) {
+            result.style.color = "green";
+            result.innerHTML = "✅ Excellent pronunciation!";
+        } else if (spoken.includes(target) || target.includes(spoken)) {
+            result.style.color = "orange";
+            result.innerHTML = "⚠️ Good, but needs improvement.<br>You said: <i>" + spoken + "</i>";
+        } else {
+            result.style.color = "red";
+            result.innerHTML = "❌ Try again.<br>You said: <i>" + spoken + "</i>";
+        }
+    }
+</script>
+
+</body>
+</html>
